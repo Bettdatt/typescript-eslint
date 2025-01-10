@@ -2,14 +2,14 @@ import debug from 'debug';
 import * as ts from 'typescript';
 
 import type { ParseSettings } from '../parseSettings';
-import { getScriptKind } from './getScriptKind';
 import type { ASTAndDefiniteProgram } from './shared';
+
+import { getScriptKind } from './getScriptKind';
 import { createDefaultCompilerOptionsFromExtra } from './shared';
 
 const log = debug('typescript-eslint:typescript-estree:createIsolatedProgram');
 
 /**
- * @param code The code of the file being linted
  * @returns Returns a new source file and program corresponding to the linted code
  */
 function createIsolatedProgram(
@@ -31,11 +31,11 @@ function createIsolatedProgram(
     getCurrentDirectory() {
       return '';
     },
-    getDirectories() {
-      return [];
-    },
     getDefaultLibFileName() {
       return 'lib.d.ts';
+    },
+    getDirectories() {
+      return [];
     },
 
     // TODO: Support Windows CRLF
@@ -65,9 +65,10 @@ function createIsolatedProgram(
   const program = ts.createProgram(
     [parseSettings.filePath],
     {
+      jsDocParsingMode: parseSettings.jsDocParsingMode,
+      jsx: parseSettings.jsx ? ts.JsxEmit.Preserve : undefined,
       noResolve: true,
       target: ts.ScriptTarget.Latest,
-      jsx: parseSettings.jsx ? ts.JsxEmit.Preserve : undefined,
       ...createDefaultCompilerOptionsFromExtra(parseSettings),
     },
     compilerHost,

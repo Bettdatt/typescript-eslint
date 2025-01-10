@@ -1,10 +1,17 @@
 import * as ts from 'typescript';
 
-import * as util from '../util';
+import {
+  createRule,
+  getConstrainedTypeAtLocation,
+  getParserServices,
+  isTypeArrayTypeOrUnionOfArrayTypes,
+} from '../util';
+import { getForStatementHeadLoc } from '../util/getForStatementHeadLoc';
 
-export default util.createRule({
+export default createRule({
   name: 'no-for-in-array',
   meta: {
+    type: 'problem',
     docs: {
       description: 'Disallow iterating over an array with a for-in loop',
       recommended: 'recommended',
@@ -12,26 +19,25 @@ export default util.createRule({
     },
     messages: {
       forInViolation:
-        'For-in loops over arrays are forbidden. Use for-of or array.forEach instead.',
+        'For-in loops over arrays skips holes, returns indices as strings, and may visit the prototype chain or other enumerable properties. Use a more robust iteration method such as for-of or array.forEach instead.',
     },
     schema: [],
-    type: 'problem',
   },
   defaultOptions: [],
   create(context) {
     return {
       ForInStatement(node): void {
-        const services = util.getParserServices(context);
+        const services = getParserServices(context);
         const checker = services.program.getTypeChecker();
 
-        const type = util.getConstrainedTypeAtLocation(services, node.right);
+        const type = getConstrainedTypeAtLocation(services, node.right);
 
         if (
-          util.isTypeArrayTypeOrUnionOfArrayTypes(type, checker) ||
+          isTypeArrayTypeOrUnionOfArrayTypes(type, checker) ||
           (type.flags & ts.TypeFlags.StringLike) !== 0
         ) {
           context.report({
-            node,
+            loc: getForStatementHeadLoc(context.sourceCode, node),
             messageId: 'forInViolation',
           });
         }
